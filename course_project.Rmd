@@ -1,0 +1,120 @@
+---
+title: "PML Course project"
+author: "Azat Gabdolla"
+date: '2 '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. 
+
+This project aims to create model that predict activity type (classe) based on activity data. 
+I used three model: Random Tree, Gradient Boosting method and Random Forest.
+
+1st. Project preparation.
+I attached used libraries, downloaded data and converted dataframes to data.table
+```{r}
+
+suppressMessages(suppressWarnings(library(caret)))
+suppressMessages(suppressWarnings(library(data.table)))
+suppressMessages(suppressWarnings(library(randomForest)))
+suppressMessages(suppressWarnings(library(e1071)))
+suppressMessages(suppressWarnings(library(AppliedPredictiveModeling)))
+```
+
+```{r}
+setwd("~/Edu/Practical machine learning")
+
+training_url <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+testing_url <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+if(!file.exists("training.csv")){download.file(training_url, "training.csv")}
+if(!file.exists("testing.csv")){download.file(testing_url, "testing.csv")}
+testing <- read.csv("testing.csv",sep = ",", header = TRUE, na.strings = c("NA", " ", '#DIV/0!'))
+training <- read.csv("training.csv",sep=",", header = TRUE, na.strings = c("NA", " ", '#DIV/0!'))
+```
+
+Remove empty and not informative columns columns. Not informative data is username, timestamps and windows details.
+```{r}
+
+training <- training[,colSums(is.na(training))==0]
+testing <- testing[,colSums(is.na(testing))==0]
+
+#columns 1 to 7 represent username, timestamp and windows that are not useful in model building
+training <- training[, -c(1:7)]
+testing <- testing[, -c(1:7)]
+```
+
+Data preprocessing.
+I separated training data in two parts with .95/.05 ratio. Bigger part is used to train model and smaller part for validation
+```{r}
+set.seed(111)
+Index <- createDataPartition(y = training[, "classe"], p = 0.95, list = FALSE)
+
+modeling_data <- training[Index,]
+validation_data <- training[-Index,]
+```
+
+In order to prevent overfitting and to make results more concise I do cross validation for 5 times. Used this setups in each method.
+```{r}
+trControl <- trainControl(method = "cv", number = 5)
+```
+
+Firs applied algorithm is Random tree. It gave poor results, so I decided to move to another  method 
+
+```{r}
+set.seed(111)
+RandomTree <-  train(classe~., data = modeling_data, method = "rpart", trControl = trControl)
+print(RandomTree)
+```
+
+```{r}
+validating <- predict(RandomTree, newdata = validation_data)
+confusionMatrix(validation_data$classe, validating)
+```
+
+
+GBM Gradient boosting method. GBM was ~98% accurate on validating data. Can be seen from Confusion matrix. GBM is good but not good as Random Forest  
+
+```{r}
+set.seed(111)
+model_GBM <- train(classe~., data = modeling_data, method = "gbm", trControl = trControl, verbose = FALSE)
+```
+
+```{r}
+print(model_GBM, digtis = 4)
+```
+
+
+```{r}
+gbm_validating <- predict(model_GBM, newdata = validation_data)
+confusionMatrix(gbm_validating, validation_data$classe)
+```
+
+Random Forest is 99.8% accurate. And prediction of test set gave 100% result. 
+
+```{r}
+set.seed(111)
+rf <- randomForest(classe~., data = modeling_data, trControl = trControl)
+```
+
+```{r}
+print(rf, digits = 4)
+```
+
+
+```{r}
+rf_validatin <- predict(rf, newdata = validation_data)
+confusionMatrix(rf_validatin, validation_data$classe)
+```
+
+```{r}
+predict(rf, testing)
+```
+
+Application of algorithms was as basic as possible. All predictors apart from classe were used to train models.
+#Conclusion
+Comparatively for this dataset Random Forest is the best option. So it was used to make predictions of test data and it gave 100% score.
+
