@@ -6,6 +6,6 @@ about physical activity of sportsmen. Data is taken from  http://web.archive.org
 
 Repository includes three files:
 1. Readme.md - Intro and short info about project
-2. course_project.html - html version of report. Includes code and explanation of steps, report of analysis.
+2. course_project.html - html version of report. Includes code and explanation of steps, report of analysis. This version includes results of algorithms and code prints.
 3. course_project.Rmd - Rmarkdown version of report. Includes code and explanation of steps, report of analysis.
 
